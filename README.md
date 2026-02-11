@@ -81,15 +81,22 @@ pnpm crx
 
 ## 架构说明
 
-```
-┌─────────────────┐     ┌─────────────────────┐     ┌─────────────────┐
-│    Side Panel   │ ←→  │   Background (SW)   │ ←→  │  Content Script │
-│   (Vue 3 UI)   │     │   消息路由 + 存储    │     │  注入目标网页   │
-└─────────────────┘     └─────────────────────┘     └─────────────────┘
-        │                           │                           │
-        │                      storage.local              localStorage /
-        │                    (监听字段、配置)             sessionStorage
-        └───────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph SP["侧边栏 Side Panel"]
+        A[Vue 3 UI]
+    end
+
+    subgraph BG["Background"]
+        B[消息路由 + storage.local]
+    end
+
+    subgraph CS["Content Script"]
+        C[读写 localStorage / sessionStorage]
+    end
+
+    SP <-->|sendMessage| BG
+    BG <-->|tabs.sendMessage| CS
 ```
 
 - **侧边栏**：用户操作入口，通过 `browser.runtime.sendMessage` 与 background 通信
