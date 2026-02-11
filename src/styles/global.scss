@@ -1,0 +1,12 @@
+/* 仅做基础重置，颜色均使用 Element Plus 的 var() */
+body,
+html,
+#app {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -1,0 +1,42 @@
+{
+  "name": "multi-tool-assistant",
+  "description": "多工具助手 - 浏览器扩展，包含缓存助手等实用功能",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "crx": "node scripts/crx.mjs",
+    "gen-icons": "node scripts/gen-icons.mjs",
+    "compile": "vue-tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@unocss/reset": "^66.6.0",
+    "@vueuse/core": "^14.2.1",
+    "@wxt-dev/unocss": "^1.0.1",
+    "dayjs": "^1.11.19",
+    "element-plus": "^2.13.2",
+    "es-toolkit": "^1.44.0",
+    "vue": "^3.5.27",
+    "vue-router": "^5.0.2"
+  },
+  "devDependencies": {
+    "@wxt-dev/module-vue": "^1.0.3",
+    "crx3": "^2.0.0",
+    "sass-embedded": "^1.97.3",
+    "sharp": "^0.34.5",
+    "typescript": "^5.9.3",
+    "unocss": "^66.6.0",
+    "unplugin-auto-import": "^21.0.0",
+    "unplugin-vue-components": "^31.0.0",
+    "vue-tsc": "^3.2.4",
+    "wxt": "^0.20.14"
+  }
+}
