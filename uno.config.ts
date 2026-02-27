@@ -16,5 +16,15 @@ export default defineConfig({
     presetTypography(),
     presetWind3({}),
   ],
-  transformers: [transformerVariantGroup(), transformerDirectives()],
+  transformers: [transformerDirectives(), transformerVariantGroup()],
+  shortcuts: {
+    "neu-raised": "bg-[var(--neu-surface)] shadow-[var(--neu-shadow-md)] rounded-[var(--neu-radius)]",
+    "neu-raised-sm":
+      "bg-[var(--neu-surface)] shadow-[var(--neu-shadow-sm)] rounded-[var(--neu-radius-sm)]",
+    "neu-pressed": "bg-[var(--neu-surface)] shadow-[var(--neu-inset)] rounded-[var(--neu-radius)]",
+    "neu-pressed-sm":
+      "bg-[var(--neu-surface)] shadow-[var(--neu-inset-sm)] rounded-[var(--neu-radius-sm)]",
+    "neu-radius": "rounded-[var(--neu-radius)]",
+    "neu-radius-sm": "rounded-[var(--neu-radius-sm)]",
+  },
 })

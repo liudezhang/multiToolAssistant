@@ -1,6 +1,6 @@
 <template>
   <RootView>
-    <div class="app w-full h-full flex flex-col bg-[var(--el-fill-color-blank)]">
+    <div class="w-full h-full flex flex-col">
       <router-view />
     </div>
   </RootView>
@@ -8,5 +8,5 @@
 
 <script setup lang="ts">
 /** 侧边栏根组件：提供 Element Plus 配置与路由视图 */
-import RootView from "../../components/RootView.vue"
+import RootView from "@/components/RootView.vue"
 </script>

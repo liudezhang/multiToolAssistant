@@ -4,7 +4,7 @@
  * 由 background 通过 tabs.sendMessage 调用
  */
 import { browser } from "wxt/browser"
-import { normalizeStorageItems } from "../utils/storage"
+import { normalizeStorageItems } from "@/utils/storage"
 
 export default defineContentScript({
   matches: ["<all_urls>"],

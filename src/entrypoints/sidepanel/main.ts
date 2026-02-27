@@ -3,9 +3,9 @@ import ElementPlus from "element-plus"
 import "element-plus/dist/index.css"
 import "virtual:uno.css"
 import { createApp } from "vue"
-import { router } from "../../router"
-import "../../styles/global.scss"
-import App from "./App.vue"
+import { router } from "@/router"
+import "@/styles/global.scss"
+import App from "@/entrypoints/sidepanel/App.vue"
 
 const app = createApp(App)
 app.use(ElementPlus)

@@ -2,6 +2,7 @@
  * WXT 扩展构建配置
  * @see https://wxt.dev/api/config.html
  */
+import { fileURLToPath, URL } from "node:url"
 import UnoCSS from "unocss/vite"
 import AutoImport from "unplugin-auto-import/vite"
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers"
@@ -23,6 +24,7 @@ export default defineConfig({
       "background",
       "sidePanel",
       "tabs",
+      "bookmarks",
     ],
     // 请求所有 URL 权限，以便 content script 可注入任意页面读取 storage
     host_permissions: ["<all_urls>"],
@@ -32,6 +34,16 @@ export default defineConfig({
   },
   vite: () => {
     return {
+      resolve: {
+        alias: {
+          "@": fileURLToPath(new URL("./src", import.meta.url)),
+        },
+      },
+      server: {
+        watch: {
+          persistent: true,
+        },
+      },
       plugins: [
         UnoCSS(),
         AutoImport({

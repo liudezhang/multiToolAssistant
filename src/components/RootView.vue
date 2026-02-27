@@ -1,7 +1,9 @@
 <template>
-  <el-config-provider v-bind="configProviderProps">
-    <slot />
-  </el-config-provider>
+  <div class="w-full h-full">
+    <el-config-provider v-bind="configProviderProps">
+      <slot />
+    </el-config-provider>
+  </div>
 </template>
 
 <script setup lang="ts">

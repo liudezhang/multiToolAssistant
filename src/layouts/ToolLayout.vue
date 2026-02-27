@@ -1,14 +1,12 @@
 <template>
   <div class="tool-layout flex flex-col h-full min-h-0">
-    <div
-      class="tool-header flex items-center gap-2 shrink-0 py-2 px-3 border-b border-[var(--el-border-color-lighter)]"
-    >
-      <el-button :icon="ArrowLeft" text circle size="small" @click="goBack" />
-      <span class="font-500 text-[var(--el-text-color-primary)] truncate">
+    <div class="tool-header neu-pressed-sm flex items-center gap-2 shrink-0 py-3 px-4 mx-3 mt-3 neu-radius-sm">
+      <el-button :icon="ArrowLeft" text circle size="small" class="tool-back-btn" @click="goBack" />
+      <span class="font-600 text-[var(--el-text-color-primary)] truncate text-[15px]">
         {{ route.meta?.title || "工具" }}
       </span>
     </div>
-    <div class="tool-content flex-1 min-h-0 overflow-y-auto">
+    <div class="flex-1 min-h-0 overflow-y-auto py-3 px-4 pb-4">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -31,14 +29,23 @@ function goBack() {
 }
 </script>
 
-<style scoped>
-.tool-content {
-  padding: 0;
+<style lang="scss" scoped>
+/* 工具布局 - 按 DOM 父子层级 */
+.tool-layout {
+  .tool-header .tool-back-btn {
+    color: var(--el-text-color-secondary) !important;
+
+    &:hover {
+      color: var(--el-color-primary) !important;
+    }
+  }
 }
+
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

@@ -6,7 +6,7 @@
 import type { RouteRecordRaw } from "vue-router"
 import { createRouter, createWebHashHistory } from "vue-router"
 import { browser } from "wxt/browser"
-import ToolLayout from "../layouts/ToolLayout.vue"
+import ToolLayout from "@/layouts/ToolLayout.vue"
 
 /** storage 中存储上次使用工具路径的键名 */
 const LAST_TOOL_KEY = "lastTool"
@@ -17,7 +17,13 @@ export const toolRoutes: RouteRecordRaw[] = [
     path: "/cache-assistant",
     name: "CacheAssistant",
     meta: { title: "缓存助手", desc: "缓存页面的 localStorage / sessionStorage 字段", icon: "Box" },
-    component: () => import("../views/tools/CacheAssistant.vue"),
+    component: () => import("@/views/tools/CacheAssistant.vue"),
+  },
+  {
+    path: "/bookmark-assistant",
+    name: "BookmarkAssistant",
+    meta: { title: "书签助手", desc: "查看、修改、导出浏览器书签", icon: "Collection" },
+    component: () => import("@/views/tools/BookmarkAssistant.vue"),
   },
 ]
 
@@ -26,7 +32,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "Home",
-    component: () => import("../views/Home.vue"),
+    component: () => import("@/views/Home.vue"),
   },
   {
     path: "/",

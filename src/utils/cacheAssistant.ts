@@ -1,5 +1,5 @@
 import { omitBy } from "es-toolkit/object"
-import type { StorageData } from "../types"
+import type { StorageData } from "@/types"
 
 /** 统计有效键数量（排除 _source 元数据） */
 export function getDataKeysCount(data: StorageData): number {

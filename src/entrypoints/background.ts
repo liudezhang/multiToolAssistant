@@ -4,10 +4,10 @@
  * - 在侧边栏与 content script 之间转发消息
  * - 管理监听字段、配置的持久化存储
  */
+import type { StorageConfig } from "@/types"
+import { normalizeStorageItems } from "@/utils/storage"
 import { isPlainObject } from "es-toolkit/predicate"
 import { browser } from "wxt/browser"
-import type { StorageConfig } from "../types"
-import { normalizeStorageItems } from "../utils/storage"
 
 const sidepanelPorts: Set<{ postMessage: (msg: unknown) => void }> = new Set()
 
@@ -222,7 +222,7 @@ async function handleGetStorageData(
       try {
         await browser.scripting.executeScript({
           target: { tabId },
-          files: ["content-scripts/content.js"],
+          files: ["/content-scripts/content.js"],
         })
         results = await browser.tabs.sendMessage(tabId, {
           type: "GET_STORAGE_DATA",

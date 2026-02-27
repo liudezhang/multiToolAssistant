@@ -1,12 +1,12 @@
 <template>
-  <div class="content px-2 pb-2">
+  <div class="cache-content w-full h-full px-1 pb-3">
     <div class="flex items-center justify-between">
-      <h1 class="title m-0 mb-2 text-lg font-600 text-[var(--el-text-color-primary)]">缓存助手</h1>
+      <h1 class="m-0 mb-2 text-lg font-600 text-[var(--el-text-color-primary)]">缓存助手</h1>
       <slot name="header-actions"></slot>
     </div>
 
     <!-- 当前站点 -->
-    <div class="site-info mb-4">
+    <div class="mb-4">
       <p class="m-0 mb-1 text-[var(--el-font-size-small)] text-[var(--el-text-color-secondary)]">
         当前站点:
         <span class="text-[var(--el-color-primary)] font-600 text-base">{{
@@ -48,15 +48,15 @@
       </div>
       <div
         v-if="watchedKeys.length === 0"
-        class="empty-hint text-center py-6 text-[var(--el-font-size-small)] text-[var(--el-text-color-placeholder)]"
+        class="text-center py-6 text-[var(--el-font-size-small)] text-[var(--el-text-color-placeholder)]"
       >
         暂无监听字段
       </div>
-      <div v-else class="keys-list flex flex-col gap-2 px-1">
+      <div v-else class="flex flex-col gap-2 px-1">
         <div
           v-for="item in watchedKeys"
           :key="item.key"
-          class="key-item flex justify-between items-center rounded border border-[var(--el-border-color-extra-light)]"
+          class="neu-pressed-sm flex justify-between items-center neu-radius-sm px-3 py-2"
         >
           <span class="font-mono text-[var(--el-font-size-small)] truncate font-600">{{
             item.key
@@ -84,7 +84,7 @@
       </template>
       <div
         v-if="watchedKeys.length === 0"
-        class="empty-hint text-center py-4 text-[var(--el-font-size-small)] text-[var(--el-text-color-placeholder)]"
+        class="text-center py-4 text-[var(--el-font-size-small)] text-[var(--el-text-color-placeholder)]"
       >
         请先添加监听的键名
       </div>
@@ -95,29 +95,27 @@
           </span>
           <el-button type="primary" :icon="Refresh" @click="loadCurrentData"> 刷新数据 </el-button>
         </div>
-        <div
-          class="data-preview mb-3 overflow-y-auto rounded border border-[var(--el-border-color-extra-light)]"
-        >
+        <div class="neu-pressed-sm mb-3 overflow-y-auto neu-radius-sm p-2">
           <div
             v-if="isEmptyObject(displayData)"
             class="flex justify-center items-center py-8 text-[var(--el-font-size-small)] text-[var(--el-text-color-placeholder)]"
           >
             暂无数据
           </div>
-          <div v-else class="data-container py-2 flex flex-col gap-2">
+          <div v-else class="py-2 flex flex-col gap-2">
             <div
               v-for="(value, key) in displayData"
               :key="key"
-              class="data-item flex gap-2 py-2 px-2 rounded border border-[var(--el-border-color-extra-light)] items-center"
+              class="neu-raised-sm flex gap-2 py-2 px-3 neu-radius-sm items-center mb-2 last:mb-0"
             >
               <div
-                class="data-key font-mono text-[var(--el-font-size-small)] font-600 text-[var(--el-text-color-primary)] shrink-0 truncate"
+                class="font-mono text-[var(--el-font-size-small)] font-600 text-[var(--el-text-color-primary)] shrink-0 truncate"
                 :title="key"
               >
                 {{ key }}
               </div>
               <div
-                class="data-value font-mono text-[var(--el-font-size-extra-small)] text-[var(--el-text-color-regular)] truncate flex-1 min-w-0"
+                class="font-mono text-[var(--el-font-size-extra-small)] text-[var(--el-text-color-regular)] truncate flex-1 min-w-0"
                 :title="formatValue(value)"
               >
                 <el-tag v-if="value === null" type="info">null</el-tag>
@@ -125,7 +123,7 @@
                 <el-tag v-else-if="value === ''" type="info">空</el-tag>
                 <span v-else>{{ formatValue(value) }}</span>
               </div>
-              <div class="data-actions flex shrink-0 gap-1 items-center">
+              <div class="flex shrink-0 gap-1 items-center">
                 <el-button :icon="View" link type="primary" @click="openViewer(key, value)" />
                 <el-tag :type="getSourceType(currentData, key)">
                   {{ getSourceText(currentData, key) }}
@@ -155,17 +153,17 @@
       </template>
       <div
         v-if="configList.length === 0"
-        class="empty-config flex justify-center items-center py-8 rounded border border-dashed border-[var(--el-border-color)] bg-[var(--el-fill-color-extra-light)]"
+        class="neu-pressed-sm flex justify-center items-center py-8 neu-radius"
       >
         <span class="text-[var(--el-font-size-base)] text-[var(--el-text-color-placeholder)]">
           暂无配置，保存后显示（按当前站点区分）
         </span>
       </div>
-      <div v-else class="configs-list flex flex-col gap-2">
+      <div v-else class="flex flex-col gap-2">
         <div
           v-for="config in configList"
           :key="config.id"
-          class="config-item flex justify-between items-center py-2 rounded bg-[var(--el-fill-color-blank)] border border-[var(--el-border-color-extra-light)] hover:border-[var(--el-border-color-lighter)]"
+          class="config-item neu-pressed-sm flex justify-between items-center py-3 px-3 neu-radius-sm transition-all cursor-default"
         >
           <div>
             <div class="font-500 text-[var(--el-text-color-primary)] truncate">
@@ -221,15 +219,15 @@
  * - 应用/删除已保存配置
  * 通过 browser.runtime.sendMessage 与 background 通信
  */
+import type { StorageConfig, StorageData, StorageType, WatchedKey } from "@/types"
+import { getDataKeysCount, getSourceText, getSourceType } from "@/utils/cacheAssistant"
+import { formatDate, formatValue } from "@/utils/format"
 import { Delete, DocumentAdd, Refresh, View } from "@element-plus/icons-vue"
 import { useClipboard, useToggle } from "@vueuse/core"
 import { ElMessage, ElMessageBox } from "element-plus"
 import { omitBy } from "es-toolkit/object"
 import { isEmptyObject } from "es-toolkit/predicate"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
-import type { StorageConfig, StorageData, StorageType, WatchedKey } from "../types"
-import { getDataKeysCount, getSourceText, getSourceType } from "../utils/cacheAssistant"
-import { formatDate, formatValue } from "../utils/format"
 
 const newKey = ref("")
 const newKeyStorageType = ref<StorageType>("localStorage")
@@ -444,40 +442,57 @@ async function copyValue(text: string) {
 </script>
 
 <style lang="scss" scoped>
-.section-card :deep(.el-card__header) {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
+/* 缓存助手 - 按 DOM 父子层级组织 */
+.cache-content {
+  .section-card {
+    :deep(.el-card__header) {
+      padding: 12px 14px;
+      border-bottom: none;
+      background: transparent;
+    }
 
-.section-card :deep(.el-card__body) {
-  padding: 12px;
-}
+    :deep(.el-card__body) {
+      padding: 14px;
+    }
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--el-font-size-base);
-  font-weight: 500;
-  color: var(--el-text-color-primary);
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--el-font-size-base);
+      font-weight: 600;
+      color: var(--el-text-color-primary);
 
-  .bullet {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--el-color-primary);
+      .bullet {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--el-color-primary);
+        box-shadow: var(--neu-shadow-sm);
+      }
+    }
+
+    .section-desc {
+      line-height: 1.4;
+    }
+
+    .config-item {
+      &:hover {
+        box-shadow: var(--neu-inset);
+      }
+    }
   }
 }
 
-.section-desc {
-  line-height: 1;
+/* 弹窗 teleport 到 body，需独立选择器 */
+.value-viewer-dialog {
+  :deep(.el-dialog__body) {
+    max-height: 70vh;
+    overflow: hidden;
+  }
 }
 
-.value-viewer-dialog :deep(.el-dialog__body) {
-  max-height: 70vh;
-  overflow: hidden;
-}
 .value-viewer-content {
   max-height: 65vh;
   padding: 8px 0;
