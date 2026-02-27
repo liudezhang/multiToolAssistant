@@ -1,35 +1,49 @@
 <template>
   <div class="bm-panel w-full h-full flex flex-col">
-    <header
-      class="bm-header neu-pressed-sm flex items-center justify-between gap-3 px-3 py-3 mb-3 neu-radius-sm"
-    >
-      <div class="bm-brand flex items-center gap-2">
-        <span class="bm-brand-icon text-lg text-[var(--el-color-primary)] opacity-90">✦</span>
+    <header class="bm-header neu-pressed-sm px-3 py-3 mb-3 neu-radius-sm">
+      <div class="bm-brand flex items-center gap-2 mb-3">
+        <span class="bm-brand-icon text-[1.1rem] text-[var(--el-color-primary)]">✦</span>
         <h1
-          class="bm-title m-0 text-[1.1rem] font-600 tracking-wide text-[var(--el-text-color-primary)]"
+          class="bm-title m-0 text-[1.05rem] font-600 tracking-wide text-[var(--el-text-color-primary)]"
         >
           书签
         </h1>
       </div>
-      <div class="bm-toolbar flex items-center gap-2">
+      <div class="bm-toolbar grid grid-cols-3 gap-2">
         <button
           type="button"
-          class="bm-btn bm-btn-ghost inline-flex items-center gap-1 px-3 py-1 text-sm font-500 border-none cursor-pointer transition-all duration-200 neu-radius-sm"
+          class="bm-btn bm-btn-ghost flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
           :disabled="loading"
+          title="刷新"
           @click="loadBookmarks"
         >
-          <el-icon v-if="loading" class="is-loading"><Loading /></el-icon>
-          <el-icon v-else><Refresh /></el-icon>
-          <span>刷新</span>
+          <el-icon v-if="loading" class="is-loading bm-btn-icon"><Loading /></el-icon>
+          <el-icon v-else class="bm-btn-icon"><Refresh /></el-icon>
+          <span class="truncate">刷新</span>
         </button>
-        <el-dropdown trigger="click" @command="handleExport" popper-class="bm-export-popper">
+        <button
+          type="button"
+          class="bm-btn bm-btn-danger flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
+          :disabled="loading || !treeData.length"
+          title="清空全部书签"
+          @click="confirmClearAll"
+        >
+          <el-icon class="bm-btn-icon"><Delete /></el-icon>
+          <span class="truncate">清空全部</span>
+        </button>
+        <el-dropdown
+          trigger="click"
+          @command="handleExport"
+          popper-class="bm-export-popper"
+          class="col-span-1"
+        >
           <button
             type="button"
-            class="bm-btn bm-btn-primary inline-flex items-center gap-1 px-3 py-1 text-sm font-500 border-none cursor-pointer transition-all duration-200 neu-radius-sm"
+            class="bm-btn bm-btn-primary w-full flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
           >
-            <el-icon><Download /></el-icon>
-            <span>导出</span>
-            <el-icon class="bm-chevron text-xs ml-0.5"><ArrowDown /></el-icon>
+            <el-icon class="bm-btn-icon"><Download /></el-icon>
+            <span class="truncate">导出</span>
+            <el-icon class="bm-btn-chevron shrink-0"><ArrowDown /></el-icon>
           </button>
           <template #dropdown>
             <el-dropdown-menu>
@@ -265,6 +279,38 @@ async function confirmDelete(node: BookmarkTreeItem) {
   }
 }
 
+async function confirmClearAll() {
+  if (!treeData.value.length) return
+  try {
+    await ElMessageBox.confirm(
+      "确定要清空所有书签吗？此操作不可恢复，建议先导出备份。",
+      "清空全部书签",
+      { confirmButtonText: "清空", cancelButtonText: "取消", type: "warning" }
+    )
+    loading.value = true
+    error.value = ""
+    const tree = await browser.bookmarks.getTree()
+    const roots = tree[0]?.children ?? tree
+    for (const root of roots) {
+      if (root.id === "0") continue
+      const children = root.children ?? []
+      for (const child of [...children]) {
+        if (child.url) {
+          await browser.bookmarks.remove(child.id)
+        } else {
+          await browser.bookmarks.removeTree(child.id)
+        }
+      }
+    }
+    ElMessage.success("已清空所有书签")
+    await loadBookmarks()
+  } catch (e) {
+    if (e !== "cancel") ElMessage.error(e instanceof Error ? e.message : "清空失败")
+  } finally {
+    loading.value = false
+  }
+}
+
 function handleExport(format: "html" | "json" | "excel") {
   if (!rawTree.value.length) {
     ElMessage.warning("暂无书签可导出")
@@ -315,35 +361,62 @@ onMounted(() => loadBookmarks())
 .bm-panel {
   color: var(--el-text-color-primary);
 
-  .bm-header .bm-btn {
-    background: var(--neu-surface);
-    box-shadow: var(--neu-shadow-sm);
-
-    &:active {
-      box-shadow: var(--neu-inset-sm);
+  .bm-header {
+    .bm-btn-icon {
+      font-size: 14px;
     }
+    .bm-btn-chevron {
+      font-size: 12px;
+      margin-left: 2px;
+      opacity: 0.9;
+    }
+    .bm-btn {
+      background: var(--neu-surface);
+      box-shadow: var(--neu-shadow-sm);
+      transition: all var(--neu-transition);
 
-    &.bm-btn-ghost {
-      color: var(--el-text-color-secondary);
-
-      &:hover:not(:disabled) {
-        color: var(--el-text-color-primary);
-        box-shadow: var(--neu-shadow-md);
+      &:active:not(:disabled) {
+        transform: scale(0.98);
+        box-shadow: var(--neu-inset-sm);
       }
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      &.bm-btn-ghost {
+        color: var(--el-text-color-secondary);
+
+        &:hover:not(:disabled) {
+          color: var(--el-text-color-primary);
+          box-shadow: var(--neu-shadow-md);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
       }
-    }
 
-    &.bm-btn-primary {
-      background: var(--el-color-primary);
-      color: #fff;
+      &.bm-btn-primary {
+        background: var(--el-color-primary);
+        color: #fff;
 
-      &:hover {
-        filter: brightness(1.05);
-        box-shadow: var(--neu-shadow-md);
+        &:hover:not(:disabled) {
+          filter: brightness(1.08);
+          box-shadow: var(--neu-shadow-md);
+        }
+      }
+
+      &.bm-btn-danger {
+        background: var(--el-color-danger);
+        color: #fff;
+
+        &:hover:not(:disabled) {
+          filter: brightness(1.08);
+          box-shadow: var(--neu-shadow-md);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
       }
     }
   }
