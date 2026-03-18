@@ -25,6 +25,7 @@ export default defineConfig({
       "sidePanel",
       "tabs",
       "bookmarks",
+      "favicon",
     ],
     // 请求所有 URL 权限，以便 content script 可注入任意页面读取 storage
     host_permissions: ["<all_urls>"],

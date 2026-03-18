@@ -9,7 +9,7 @@
           书签
         </h1>
       </div>
-      <div class="bm-toolbar grid grid-cols-3 gap-2">
+      <div class="bm-toolbar grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button
           type="button"
           class="bm-btn bm-btn-ghost flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
@@ -20,6 +20,17 @@
           <el-icon v-if="loading" class="is-loading bm-btn-icon"><Loading /></el-icon>
           <el-icon v-else class="bm-btn-icon"><Refresh /></el-icon>
           <span class="truncate">刷新</span>
+        </button>
+        <button
+          type="button"
+          class="bm-btn bm-btn-ghost flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
+          :disabled="loading || fixingIcons || !treeData.length"
+          title="仅对无图标的书签，后台访问网站以触发图标更新"
+          @click="fixBookmarkIcons"
+        >
+          <el-icon v-if="fixingIcons" class="is-loading bm-btn-icon"><Loading /></el-icon>
+          <el-icon v-else class="bm-btn-icon"><Picture /></el-icon>
+          <span class="truncate">修复图标</span>
         </button>
         <button
           type="button"
@@ -182,18 +193,28 @@
  */
 import type { BookmarkTreeItem } from "@/utils/bookmarkAssistant"
 import {
+  flattenBookmarks,
   toExportExcel,
   toExportJson,
   toNetscapeHtml,
   toTreeItems,
   type BookmarkTreeNode,
 } from "@/utils/bookmarkAssistant"
-import { ArrowDown, Delete, Download, Edit, Loading, Refresh } from "@element-plus/icons-vue"
+import {
+  ArrowDown,
+  Delete,
+  Download,
+  Edit,
+  Loading,
+  Picture,
+  Refresh,
+} from "@element-plus/icons-vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import { onMounted, ref } from "vue"
 import { browser } from "wxt/browser"
 
 const loading = ref(false)
+const fixingIcons = ref(false)
 const error = ref("")
 const rawTree = ref<BookmarkTreeNode[]>([])
 const treeData = ref<BookmarkTreeItem[]>([])
@@ -208,6 +229,153 @@ function formatUrl(url: string): string {
     return u.hostname || url.slice(0, 20)
   } catch {
     return url.slice(0, 20)
+  }
+}
+
+/** 判断 URL 是否可在普通标签页中打开（用于触发 favicon 获取） */
+function isVisitableUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return u.protocol === "http:" || u.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+/** 获取 favicon 的 ImageData（用于判断是否为默认图标） */
+function getFaviconImageData(url: string): Promise<ImageData | null> {
+  const faviconUrl = new URL(browser.runtime.getURL("/_favicon/"))
+  faviconUrl.searchParams.set("pageUrl", url)
+  faviconUrl.searchParams.set("size", "32")
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 32
+      canvas.height = 32
+      const ctx = canvas.getContext("2d")
+      if (!ctx) {
+        resolve(null)
+        return
+      }
+      ctx.drawImage(img, 0, 0)
+      resolve(ctx.getImageData(0, 0, 32, 32))
+    }
+    img.onerror = () => resolve(null)
+    img.src = faviconUrl.toString()
+  })
+}
+
+/** 比较两个 ImageData 是否相同 */
+function imageDataEqual(a: ImageData, b: ImageData): boolean {
+  if (a.data.length !== b.data.length) return false
+  for (let i = 0; i < a.data.length; i++) {
+    if (a.data[i] !== b.data[i]) return false
+  }
+  return true
+}
+
+/** 判断 URL 是否没有 favicon（显示为默认图标） */
+async function hasNoFavicon(url: string, defaultFaviconData: ImageData): Promise<boolean> {
+  const data = await getFaviconImageData(url)
+  return data !== null && imageDataEqual(data, defaultFaviconData)
+}
+
+/** 等待标签页加载完成（或超时） */
+async function waitForTabComplete(tabId: number, timeoutMs = 15000): Promise<void> {
+  try {
+    const tab = await browser.tabs.get(tabId)
+    if (tab.status === "complete") return
+  } catch {
+    return
+  }
+  return new Promise((resolve) => {
+    const listener = (id: number, changeInfo: { status?: string }, _tab: browser.Tabs.Tab) => {
+      if (id === tabId && changeInfo.status === "complete") {
+        browser.tabs.onUpdated.removeListener(listener)
+        resolve()
+      }
+    }
+    browser.tabs.onUpdated.addListener(listener)
+    setTimeout(() => {
+      browser.tabs.onUpdated.removeListener(listener)
+      resolve()
+    }, timeoutMs)
+  })
+}
+
+async function fixBookmarkIcons() {
+  const tree = rawTree.value
+  if (!tree.length) return
+  const roots = tree[0]?.children ?? tree
+  const leaves = flattenBookmarks(roots).filter((bm) => bm.url && isVisitableUrl(bm.url))
+  const uniqueByUrl = Array.from(new Map(leaves.map((bm) => [bm.url!, bm])).values())
+  if (!uniqueByUrl.length) {
+    ElMessage.warning("没有可修复的书签（仅支持 http/https 链接）")
+    console.warn("[书签助手] 修复图标：没有可修复的书签")
+    return
+  }
+  fixingIcons.value = true
+  try {
+    ElMessage.info("正在检测缺少图标的书签…")
+    const defaultData = await getFaviconImageData("https://invalid.invalid")
+    if (!defaultData) {
+      ElMessage.warning("无法获取默认图标参考，将处理全部书签")
+      console.warn("[书签助手] 无法获取默认 favicon 参考")
+    }
+    const toFix: typeof uniqueByUrl = []
+    for (const bm of uniqueByUrl) {
+      const isDefault = defaultData ? await hasNoFavicon(bm.url!, defaultData) : true
+      if (isDefault) toFix.push(bm)
+    }
+    if (!toFix.length) {
+      ElMessage.success("所有书签均有图标，无需修复")
+      console.log("[书签助手] 修复图标：全部书签已有图标")
+      return
+    }
+    console.log(`[书签助手] 检测到 ${toFix.length} 个无图标书签，共 ${uniqueByUrl.length} 个`)
+    ElMessage.info(`发现 ${toFix.length} 个无图标书签，开始访问…`)
+    const BATCH_SIZE = 5
+    const FAVICON_EXTRA_MS = 2500
+    const LOAD_TIMEOUT_MS = 20000
+    let successCount = 0
+    let failCount = 0
+    for (let i = 0; i < toFix.length; i += BATCH_SIZE) {
+      const batch = toFix.slice(i, i + BATCH_SIZE)
+      const tabIds: number[] = []
+      for (const bm of batch) {
+        try {
+          const tab = await browser.tabs.create({ url: bm.url!, active: false })
+          tabIds.push(tab.id!)
+        } catch (err) {
+          failCount++
+          console.error(`[书签助手] 打开失败：「${bm.title}」${bm.url}`, err)
+        }
+      }
+      successCount += tabIds.length
+      await Promise.all(tabIds.map((id) => waitForTabComplete(id, LOAD_TIMEOUT_MS)))
+      await new Promise((r) => setTimeout(r, FAVICON_EXTRA_MS))
+      for (const id of tabIds) {
+        try {
+          await browser.tabs.remove(id)
+        } catch {
+          /* 标签页可能已被用户关闭 */
+        }
+      }
+    }
+    ElMessage.success(`已访问 ${successCount} 个无图标网站，图标将逐步更新`)
+    console.log(`[书签助手] 修复图标成功：已访问 ${successCount} 个无图标书签`)
+    if (failCount > 0) {
+      ElMessage.warning(`有 ${failCount} 个无法打开，详见控制台`)
+      console.warn(`[书签助手] 修复图标失败：${failCount} 个`)
+    }
+    await loadBookmarks()
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "修复图标失败"
+    ElMessage.error(msg)
+    console.error("[书签助手] 修复图标异常", e)
+  } finally {
+    fixingIcons.value = false
   }
 }
 

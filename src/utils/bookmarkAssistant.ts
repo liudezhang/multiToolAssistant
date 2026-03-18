@@ -50,8 +50,8 @@ export function toTreeItems(nodes: BookmarkTreeNode[] | undefined): BookmarkTree
 /** 递归收集所有书签（含嵌套）为扁平列表 */
 export function flattenBookmarks(
   nodes: BookmarkTreeNode[] | undefined,
-  acc: Array<{ id: string; title: string; url?: string; parentId?: string }> = []
-): Array<{ id: string; title: string; url?: string; parentId?: string }> {
+  acc: Array<{ id: string; title: string; url?: string; parentId?: string; index?: number }> = []
+): Array<{ id: string; title: string; url?: string; parentId?: string; index?: number }> {
   if (!nodes) return acc
   for (const node of nodes) {
     if (node.url) {
@@ -60,6 +60,7 @@ export function flattenBookmarks(
         title: node.title || "",
         url: node.url,
         parentId: node.parentId,
+        index: node.index,
       })
     }
     if (node.children?.length) {
