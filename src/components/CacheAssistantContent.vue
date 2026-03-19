@@ -382,6 +382,7 @@ async function handleSaveConfig() {
     return
   }
   try {
+    await loadCurrentData() // 保存前自动刷新，确保保存最新数据
     const res = await browser.runtime.sendMessage({
       type: "SAVE_CONFIG",
       name,
