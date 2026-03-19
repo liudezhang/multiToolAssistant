@@ -19,7 +19,7 @@
     </div>
 
     <!-- 监听的字段 -->
-    <el-card class="section-card mb-4">
+    <el-card class="section-card mb-2">
       <template #header>
         <span class="section-title"> <span class="bullet" />监听的字段 </span>
       </template>
@@ -78,7 +78,7 @@
     </el-card>
 
     <!-- 保存当前页面 -->
-    <el-card class="section-card mb-4">
+    <el-card class="section-card mb-2">
       <template #header>
         <span class="section-title"> <span class="bullet" />保存当前页面 </span>
       </template>

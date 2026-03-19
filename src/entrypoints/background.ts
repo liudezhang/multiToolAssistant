@@ -24,8 +24,7 @@ export default defineBackground(() => {
     })
   })
 
-  // 标签页切换时通知侧边栏刷新缓存数据
-  browser.tabs.onActivated.addListener(() => {
+  function notifySidepanelRefresh() {
     ;[...sidepanelPorts].forEach((port) => {
       try {
         port.postMessage({ type: "TAB_ACTIVATED" })
@@ -33,6 +32,16 @@ export default defineBackground(() => {
         sidepanelPorts.delete(port)
       }
     })
+  }
+
+  // 标签页切换时通知侧边栏刷新缓存数据
+  browser.tabs.onActivated.addListener(notifySidepanelRefresh)
+
+  // 当前标签页内导航（URL 变化）时也刷新
+  browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+    if (!changeInfo.url) return
+    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
+    if (activeTab?.id === tabId) notifySidepanelRefresh()
   })
 
   // 监听来自侧边栏的消息并路由到对应处理函数
@@ -246,20 +255,43 @@ async function handleGetStorageData(
   }
 }
 
-/** 向 content script 请求将数据写入页面 storage */
+/** 向 content script 请求将数据写入页面 storage，失败时尝试先注入脚本再重试 */
 async function handleSetStorageData(data: Record<string, unknown>, tabId: number | undefined) {
   if (!tabId) {
     return { success: false, error: "请先打开要操作的网页标签页" }
   }
   try {
-    const results = await browser.tabs.sendMessage(tabId, {
-      type: "SET_STORAGE_DATA",
-      data,
-    })
-    return { success: true, data: results }
+    let results: Record<string, unknown>
+    try {
+      results = await browser.tabs.sendMessage(tabId, {
+        type: "SET_STORAGE_DATA",
+        data,
+      })
+    } catch {
+      try {
+        await browser.scripting.executeScript({
+          target: { tabId },
+          files: ["/content-scripts/content.js"],
+        })
+        results = await browser.tabs.sendMessage(tabId, {
+          type: "SET_STORAGE_DATA",
+          data,
+        })
+      } catch (retryErr) {
+        throw retryErr
+      }
+    }
+    return { success: true, data: results ?? {} }
   } catch (error) {
     console.error("设置存储数据失败:", error)
-    return { success: false, error: error instanceof Error ? error.message : String(error) }
+    const msg = error instanceof Error ? error.message : String(error)
+    if (
+      msg.includes("Receiving end does not exist") ||
+      msg.includes("Could not establish connection")
+    ) {
+      return { success: false, error: "无法连接页面，请刷新目标网页后重试" }
+    }
+    return { success: false, error: msg }
   }
 }
 
@@ -299,7 +331,7 @@ function migrateOldConfigs(
   return byDomain
 }
 
-/** 保存当前页面 storage 快照（仅当前站点） */
+/** 保存当前页面 storage 快照（仅当前站点）；同名配置同组覆盖 */
 async function saveConfig(
   name: string,
   data: Record<string, unknown>,
@@ -313,6 +345,15 @@ async function saveConfig(
       CONFIGS_STORAGE_KEY
     ] as Record<string, Record<string, StorageConfig>>) ?? {}
     if (!byDomain[domainKey]) byDomain[domainKey] = {}
+
+    const existing = Object.values(byDomain[domainKey]).find((c) => c.name === name)
+    if (existing) {
+      existing.data = data
+      existing.createdAt = new Date().toISOString()
+      await browser.storage.local.set({ [CONFIGS_STORAGE_KEY]: byDomain })
+      return { success: true, configId: existing.id }
+    }
+
     const configId = `config_${Date.now()}`
     const newConfig: StorageConfig = {
       id: configId,
