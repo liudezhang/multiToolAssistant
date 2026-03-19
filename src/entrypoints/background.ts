@@ -15,33 +15,44 @@ export default defineBackground(() => {
   // 点击扩展图标时打开侧边栏
   browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error)
 
-  // 侧边栏通过 port 连接，用于接收 tab 切换通知
+  // 侧边栏通过 port 连接，用于接收页面刷新通知
   browser.runtime.onConnect.addListener((port) => {
     if (port.name !== "cache-assistant-sidepanel") return
     sidepanelPorts.add(port)
-    port.onDisconnect.addListener(() => {
-      sidepanelPorts.delete(port)
-    })
+    port.onDisconnect.addListener(() => sidepanelPorts.delete(port))
   })
 
-  function notifySidepanelRefresh() {
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null
+  const REFRESH_DELAY_MS = 800 // 页面加载后延迟刷新，等待 SPA 异步写入 storage（如切换账号后的 token）
+
+  function notifyCacheAssistantRefresh() {
     ;[...sidepanelPorts].forEach((port) => {
       try {
-        port.postMessage({ type: "TAB_ACTIVATED" })
+        port.postMessage({ type: "PAGE_REFRESHED" })
       } catch {
         sidepanelPorts.delete(port)
       }
     })
   }
 
-  // 标签页切换时通知侧边栏刷新缓存数据
-  browser.tabs.onActivated.addListener(notifySidepanelRefresh)
+  function scheduleRefresh() {
+    if (refreshTimer) clearTimeout(refreshTimer)
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null
+      notifyCacheAssistantRefresh()
+    }, REFRESH_DELAY_MS)
+  }
 
-  // 当前标签页内导航（URL 变化）时也刷新
+  // 标签页切换时刷新
+  browser.tabs.onActivated.addListener(notifyCacheAssistantRefresh)
+
+  // 当前标签页刷新完成或 URL 变化时刷新（延迟执行，等待 SPA 写入 storage）
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
-    if (!changeInfo.url) return
+    const shouldRefresh =
+      changeInfo.status === "complete" || (changeInfo.url && !changeInfo.url.startsWith("chrome:"))
+    if (!shouldRefresh) return
     const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true })
-    if (activeTab?.id === tabId) notifySidepanelRefresh()
+    if (activeTab?.id === tabId) scheduleRefresh()
   })
 
   // 监听来自侧边栏的消息并路由到对应处理函数

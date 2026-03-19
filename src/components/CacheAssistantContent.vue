@@ -252,28 +252,35 @@ const displayData = computed(() =>
   omitBy(currentData.value, (_, key) => String(key).endsWith("_source"))
 )
 
-// 连接 background 的 port，用于接收 tab 切换通知
-let tabNotifyPort: ReturnType<typeof browser.runtime.connect> | null = null
+let refreshPort: ReturnType<typeof browser.runtime.connect> | null = null
+
+async function refreshData() {
+  await loadCurrentTabUrl()
+  await loadWatchedKeys()
+  await loadConfigs()
+  await loadCurrentData()
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === "visible") refreshData()
+}
 
 onMounted(async () => {
-  await loadWatchedKeys()
-  await loadCurrentData()
-  await Promise.all([loadConfigs(), loadCurrentTabUrl()])
+  await refreshData()
 
-  // 连接 background，接收 tab 切换通知后刷新数据
-  tabNotifyPort = browser.runtime.connect({ name: "cache-assistant-sidepanel" })
-  tabNotifyPort.onMessage.addListener(async (msg: { type?: string }) => {
-    if (msg?.type === "TAB_ACTIVATED") {
-      await loadCurrentTabUrl()
-      await loadWatchedKeys()
-      await loadConfigs()
-      await loadCurrentData()
-    }
+  // 连接 background，接收页面刷新通知后刷新数据
+  refreshPort = browser.runtime.connect({ name: "cache-assistant-sidepanel" })
+  refreshPort.onMessage.addListener(async (msg: { type?: string }) => {
+    if (msg?.type === "PAGE_REFRESHED") await refreshData()
   })
+
+  // 侧边栏重新可见时刷新（如切换账号后切回浏览器，此时 storage 可能已变）
+  document.addEventListener("visibilitychange", onVisibilityChange)
 })
 
 onBeforeUnmount(() => {
-  tabNotifyPort?.disconnect()
+  document.removeEventListener("visibilitychange", onVisibilityChange)
+  refreshPort?.disconnect()
 })
 
 async function loadCurrentTabUrl() {
