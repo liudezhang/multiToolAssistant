@@ -17,26 +17,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
  * @param {string} config.outDir - 输出目录
  * @param {number[]} config.sizes - 目标尺寸列表，如 [16, 32, 48, 96, 128]
  * @param {Object} [config.options] - 可选覆盖
- * @param {number} [config.options.scale] - 渲染倍率，基准尺寸 = max(sizes) * scale，默认 16
- * @param {number} [config.options.maxSizeKB] - 单文件大小警告阈值(KB)，默认 512
- * @param {number} [config.options.compressionLevel] - PNG 压缩级别 0-9，默认 6
+ * @param {number} [config.options.scale] - 光栅化倍率，用于提升 SVG 渲染清晰度，默认 16
+ * @param {number} [config.options.maxSizeKB] - 单文件大小警告阈值(KB)，默认 64
+ * @param {number} [config.options.compressionLevel] - PNG 压缩级别 0-9，默认 9
  */
 async function genIcons(config) {
   const { svgPath, outDir, sizes } = config
-  const { scale = 16, maxSizeKB = 512, compressionLevel = 6 } = config.options ?? {}
+  const { scale = 16, maxSizeKB = 64, compressionLevel = 9 } = config.options ?? {}
 
-  // 自动计算：基准渲染尺寸 = 取最大目标尺寸的 16 倍，最小 2048
-  const baseSize = Math.max(2048, Math.max(...sizes) * 16)
+  // 光栅化基准尺寸只影响渲染清晰度，最终输出必须是精确的目标尺寸
+  const rasterSize = Math.max(1024, Math.max(...sizes) * scale)
   // 自动计算：SVG 光栅化密度，避免低分辨率放大模糊
-  const density = Math.round((baseSize / 1024) * 144)
+  const density = Math.max(72, Math.round((rasterSize / 1024) * 144))
 
   const svg = readFileSync(svgPath)
 
   for (const size of sizes) {
     const outPath = resolve(outDir, `${size}.png`)
     const png = await sharp(svg, { density })
-      .resize(baseSize, baseSize)
-      .resize(((size * baseSize) / 1024) * scale, ((size * baseSize) / 1024) * scale)
+      .resize(size, size, { fit: "contain" })
       .png({ compressionLevel })
       .toFile(outPath)
 
@@ -59,8 +58,8 @@ const defaultConfig = {
   outDir: resolve(__dirname, "../public/icon"),
   sizes: [16, 32, 48, 96, 128],
   options: {
-    scale: 20,
-    compressionLevel: 6,
+    scale: 16,
+    compressionLevel: 9,
   },
 }
 
