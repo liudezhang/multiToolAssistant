@@ -18,13 +18,14 @@ export default defineConfig({
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
   shortcuts: {
-    "neu-raised": "bg-[var(--neu-surface)] shadow-[var(--neu-shadow-md)] rounded-[var(--neu-radius)]",
-    "neu-raised-sm":
-      "bg-[var(--neu-surface)] shadow-[var(--neu-shadow-sm)] rounded-[var(--neu-radius-sm)]",
-    "neu-pressed": "bg-[var(--neu-surface)] shadow-[var(--neu-inset)] rounded-[var(--neu-radius)]",
-    "neu-pressed-sm":
-      "bg-[var(--neu-surface)] shadow-[var(--neu-inset-sm)] rounded-[var(--neu-radius-sm)]",
-    "neu-radius": "rounded-[var(--neu-radius)]",
-    "neu-radius-sm": "rounded-[var(--neu-radius-sm)]",
+    // 面：白底 + 发丝边框，不靠阴影表达层级
+    surface: "bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)]",
+    // 内嵌区块：浅灰底，用于列表 / 预览容器
+    well: "bg-[var(--surface-muted)] rounded-[var(--radius-md)]",
+    // 浮层：只有弹窗与下拉使用阴影
+    popover:
+      "bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-xl)] shadow-[var(--shadow-lg)]",
+    // 元信息文字：计数、时间、说明
+    meta: "text-[var(--el-font-size-extra-small)] text-[var(--el-text-color-secondary)]",
   },
 })

@@ -4,7 +4,6 @@
  * - 导出 HTML (Netscape 格式) / JSON / Excel
  */
 import he from "he"
-import * as XLSX from "xlsx"
 
 /** 浏览器书签节点（与 chrome.bookmarks.BookmarkTreeNode 一致） */
 export interface BookmarkTreeNode {
@@ -130,14 +129,16 @@ function flattenToRows(
   return rows
 }
 
-/** 导出为 Excel (.xlsx) 的 Uint8Array */
-export function toExportExcel(nodes: BookmarkTreeNode[]): Uint8Array {
+/** 导出为 Excel (.xlsx)；xlsx 体积较大且仅在此处使用，改为点击导出时再加载 */
+export async function toExportExcel(nodes: BookmarkTreeNode[]): Promise<ArrayBuffer> {
+  const XLSX = await import("xlsx")
   const roots = nodes[0]?.children ?? nodes
   const rows = flattenToRows(roots)
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "书签")
-  return XLSX.write(wb, { bookType: "xlsx", type: "array" })
+  // SheetJS 的 type: "array" 返回 ArrayBuffer（不是 Uint8Array）
+  return XLSX.write(wb, { bookType: "xlsx", type: "array" }) as ArrayBuffer
 }
 
 /** 递归转为可序列化的 JSON 结构 */

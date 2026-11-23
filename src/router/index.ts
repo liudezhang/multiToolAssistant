@@ -25,6 +25,12 @@ export const toolRoutes: RouteRecordRaw[] = [
     meta: { title: "书签助手", desc: "查看、修改、导出浏览器书签", icon: "Collection" },
     component: () => import("@/views/tools/BookmarkAssistant.vue"),
   },
+  {
+    path: "/credential-assistant",
+    name: "CredentialAssistant",
+    meta: { title: "账号助手", desc: "按站点管理账号密码，一键复制与填充", icon: "Key" },
+    component: () => import("@/views/tools/CredentialAssistant.vue"),
+  },
 ]
 
 /** 首页 + 工具页（带 ToolLayout 布局） */

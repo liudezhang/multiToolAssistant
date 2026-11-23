@@ -6,30 +6,25 @@ export function getDataKeysCount(data: StorageData): number {
   return Object.keys(omitBy(data, (_, k) => String(k).endsWith("_source"))).length
 }
 
-/** 根据数据来源返回 Element Plus Tag 的 type */
-export function getSourceType(
-  data: StorageData,
-  key: string
-): "success" | "warning" | "info" {
-  const source = data[`${key}_source`]
-  switch (source) {
+/** 数据来源的视觉标记：accent = localStorage，warning = sessionStorage，muted = 其它 */
+export function getSourceTone(data: StorageData, key: string): "accent" | "warning" | "muted" {
+  switch (data[`${key}_source`]) {
     case "localStorage":
-      return "success"
+      return "accent"
     case "sessionStorage":
       return "warning"
     default:
-      return "info"
+      return "muted"
   }
 }
 
-/** 根据数据来源返回展示文本 */
-export function getSourceText(data: StorageData, key: string): string {
-  const source = data[`${key}_source`]
-  switch (source) {
+/** 数据来源的短标签：列表行内空间有限，用 local / session 表示 */
+export function getSourceLabel(data: StorageData, key: string): string {
+  switch (data[`${key}_source`]) {
     case "localStorage":
-      return "localStorage"
+      return "local"
     case "sessionStorage":
-      return "sessionStorage"
+      return "session"
     case "not_found":
       return "未找到"
     default:

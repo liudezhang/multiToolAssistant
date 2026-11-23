@@ -4,6 +4,7 @@
 
 - **缓存助手**：指定并缓存页面的 `localStorage` / `sessionStorage` 字段，便于切换账号或验证不同缓存数据场景
 - **书签助手**：查看、编辑、删除、导出浏览器书签，支持 HTML / JSON / Excel 多种格式
+- **账号助手**：按站点管理账号密码（主域聚合、多账号并存），支持登录自动捕获、CSV 导入、一键复制与手动填充登录表单
 
 ## 技术栈
 
@@ -16,6 +17,7 @@
 | UnoCSS                 | 原子化 CSS                          |
 | Vue Router             | 侧边栏路由                          |
 | VueUse                 | 组合式工具函数                      |
+| Bun                    | 默认包管理器与脚本运行器            |
 
 ## 项目结构
 
@@ -28,7 +30,8 @@ multiToolAssistant/
 │   │   └── sidepanel/        # 侧边栏页面
 │   ├── components/           # 可复用组件
 │   │   ├── CacheAssistantContent.vue
-│   │   └── BookmarkAssistantContent.vue
+│   │   ├── BookmarkAssistantContent.vue
+│   │   └── CredentialAssistantContent.vue
 │   ├── layouts/              # 布局组件
 │   ├── router/               # 路由配置
 │   ├── styles/               # 全局样式
@@ -45,43 +48,55 @@ multiToolAssistant/
 
 ### 环境要求
 
-- Node.js 18+
-- pnpm（推荐）
+- Bun 1.2+（默认包管理器，锁文件为 `bun.lock`）
+- Node.js 22+（WXT 0.21 的最低要求）
+
+> 项目统一使用 Bun，请勿混用 npm / pnpm / yarn，避免产生多份锁文件。
 
 ### 安装
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 开发
 
 ```bash
 # Chrome
-pnpm dev
+bun run dev
 
 # Firefox
-pnpm dev:firefox
+bun run dev:firefox
 ```
 
 ### 构建
 
 ```bash
 # Chrome
-pnpm build
+bun run build
 
 # Firefox
-pnpm build:firefox
+bun run build:firefox
+```
+
+### 测试与类型检查
+
+```bash
+# 单元测试（Bun 内置测试器，无需额外依赖）
+bun test
+
+# 类型检查
+bun run compile
 ```
 
 ### 打包
 
 ```bash
 # 生成 zip（用于商店上架）
-pnpm zip
+bun run zip
 
 # 生成 .crx（Chrome 本地安装）
-pnpm crx
+bun run crx
 ```
 
 ## 架构说明
@@ -111,7 +126,7 @@ flowchart LR
 
 - **侧边栏**：用户操作入口，通过 `browser.runtime.sendMessage` 与 background 通信；书签助手直接调用 `browser.bookmarks` API
 - **Background**：消息分发、持久化存储、标签页切换时通知侧边栏刷新（缓存助手）
-- **Content Script**：在页面上下文中读写 `localStorage` / `sessionStorage`，由 background 通过 `tabs.sendMessage` 调用
+- **Content Script**：在页面上下文中读写 `localStorage` / `sessionStorage`、上报登录表单、填充登录表单，由 background 通过 `tabs.sendMessage` 调用
 
 ## 扩展权限
 

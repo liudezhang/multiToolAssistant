@@ -3,7 +3,6 @@
  * @see https://wxt.dev/api/config.html
  */
 import { fileURLToPath, URL } from "node:url"
-import UnoCSS from "unocss/vite"
 import AutoImport from "unplugin-auto-import/vite"
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers"
 import Components from "unplugin-vue-components/vite"
@@ -20,8 +19,6 @@ export default defineConfig({
       "storage",
       "activeTab",
       "scripting",
-      "sessions",
-      "background",
       "sidePanel",
       "tabs",
       "bookmarks",
@@ -40,13 +37,8 @@ export default defineConfig({
           "@": fileURLToPath(new URL("./src", import.meta.url)),
         },
       },
-      server: {
-        watch: {
-          persistent: true,
-        },
-      },
       plugins: [
-        UnoCSS(),
+        // UnoCSS 由 @wxt-dev/unocss 模块（modules 中注册）自动注入，此处不再重复注册
         AutoImport({
           resolvers: [ElementPlusResolver()],
         }),
@@ -55,6 +47,7 @@ export default defineConfig({
         }),
       ],
       build: {
+        // Element Plus 目前为全量引入，实际体积较大，暂保留较高阈值避免噪音告警
         chunkSizeWarningLimit: 1200,
       },
     }

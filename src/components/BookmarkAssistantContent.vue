@@ -1,158 +1,108 @@
 <template>
-  <div class="bm-panel w-full h-full flex flex-col">
-    <header class="bm-header neu-pressed-sm px-3 py-3 mb-3 neu-radius-sm">
-      <div class="bm-brand flex items-center gap-2 mb-3">
-        <span class="bm-brand-icon text-[1.1rem] text-[var(--el-color-primary)]">✦</span>
-        <h1
-          class="bm-title m-0 text-[1.05rem] font-600 tracking-wide text-[var(--el-text-color-primary)]"
-        >
-          书签
-        </h1>
-      </div>
-      <div class="bm-toolbar grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button
-          type="button"
-          class="bm-btn bm-btn-ghost flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
-          :disabled="loading"
-          title="刷新"
-          @click="loadBookmarks"
-        >
-          <el-icon v-if="loading" class="is-loading bm-btn-icon"><Loading /></el-icon>
-          <el-icon v-else class="bm-btn-icon"><Refresh /></el-icon>
-          <span class="truncate">刷新</span>
-        </button>
-        <button
-          type="button"
-          class="bm-btn bm-btn-ghost flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
-          :disabled="loading || fixingIcons || !treeData.length"
-          title="仅对无图标的书签，后台访问网站以触发图标更新"
-          @click="fixBookmarkIcons"
-        >
-          <el-icon v-if="fixingIcons" class="is-loading bm-btn-icon"><Loading /></el-icon>
-          <el-icon v-else class="bm-btn-icon"><Picture /></el-icon>
-          <span class="truncate">修复图标</span>
-        </button>
-        <button
-          type="button"
-          class="bm-btn bm-btn-danger flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
-          :disabled="loading || !treeData.length"
-          title="清空全部书签"
-          @click="confirmClearAll"
-        >
-          <el-icon class="bm-btn-icon"><Delete /></el-icon>
-          <span class="truncate">清空全部</span>
-        </button>
-        <el-dropdown
-          trigger="click"
-          @command="handleExport"
-          popper-class="bm-export-popper"
-          class="col-span-1"
-        >
-          <button
-            type="button"
-            class="bm-btn bm-btn-primary w-full flex items-center justify-center gap-1.5 h-8 px-2 text-sm font-500 border-none cursor-pointer neu-radius-sm"
-          >
-            <el-icon class="bm-btn-icon"><Download /></el-icon>
-            <span class="truncate">导出</span>
-            <el-icon class="bm-btn-chevron shrink-0"><ArrowDown /></el-icon>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="html">HTML</el-dropdown-item>
-              <el-dropdown-item command="json">JSON</el-dropdown-item>
-              <el-dropdown-item command="excel">Excel</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </header>
+  <div class="bm-panel flex flex-col h-full">
+    <!-- 工具栏 -->
+    <div class="toolbar shrink-0 grid grid-cols-2 gap-2 px-4 py-3">
+      <el-button :icon="Refresh" :loading="loading" class="w-full" @click="loadBookmarks">
+        刷新
+      </el-button>
+      <el-button
+        :icon="Picture"
+        :loading="fixingIcons"
+        :disabled="loading || fixingIcons || !treeData.length"
+        class="w-full"
+        title="仅对无图标的书签，后台访问网站以触发图标更新"
+        @click="fixBookmarkIcons"
+      >
+        修复图标
+      </el-button>
+      <el-button
+        type="danger"
+        plain
+        :icon="Delete"
+        :disabled="loading || !treeData.length"
+        class="w-full"
+        @click="confirmClearAll"
+      >
+        清空全部
+      </el-button>
+      <el-dropdown trigger="click" class="w-full" @command="handleExport">
+        <el-button type="primary" :icon="Download" class="w-full">导出</el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="html">导出 HTML</el-dropdown-item>
+            <el-dropdown-item command="json">导出 JSON</el-dropdown-item>
+            <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
 
-    <main class="bm-main flex-1 min-h-0 flex flex-col">
-      <div class="bm-card neu-raised flex flex-col overflow-hidden h-full pb-1 neu-radius">
-        <div class="bm-card-header px-3 py-3 text-sm font-600 text-[var(--el-text-color-primary)]">
-          书签列表
-        </div>
-        <div
-          v-if="loading"
-          class="bm-state bm-state-loading flex flex-col items-center justify-center gap-2 py-10 text-sm text-[var(--el-text-color-secondary)]"
-        >
-          <div class="bm-spinner" />
-          <span>加载中</span>
-        </div>
-        <div
-          v-else-if="error"
-          class="bm-state bm-state-error flex flex-col items-center justify-center gap-2 py-10 text-sm text-[var(--el-color-danger)]"
-        >
-          <span class="bm-state-icon text-2xl font-700">!</span>
-          <span>{{ error }}</span>
-        </div>
-        <div
-          v-else-if="!treeData.length"
-          class="bm-state bm-state-empty flex flex-col items-center justify-center gap-2 py-10 text-sm text-[var(--el-text-color-secondary)]"
-        >
-          <span class="bm-state-icon text-2xl font-700 opacity-50">◇</span>
-          <span>暂无书签</span>
-        </div>
-        <div v-else class="flex-1 h-0 overflow-hidden py-2 pl-2 pr-1">
-          <el-tree
-            :data="treeData"
-            :props="{ label: 'label', children: 'children' }"
-            node-key="id"
-            default-expand-all
-            highlight-current
-            :indent="12"
-            class="bm-tree overflow-auto"
-          >
-            <template #default="{ data }">
-              <div
-                class="bm-node flex items-center justify-between !w-full"
-                @mouseenter="hoveredNodeId = data.id"
-                @mouseleave="hoveredNodeId = null"
-              >
-                <div class="flex items-center w-0 flex-1 gap-1">
-                  <div class="shrink-0 text-sm">
-                    {{ data.isFolder ? "📁" : "🔗" }}
-                  </div>
-                  <div
-                    class="bm-node-label text-sm w-0 flex-1 text-[var(--el-text-color-primary)] truncate"
-                    :title="data.label"
-                  >
-                    {{ data.label }}
-                  </div>
-                </div>
-                <div
-                  class="bm-node-actions flex shrink-0 gap-1 transition-opacity duration-150"
-                  :class="{ 'opacity-0 pointer-events-none': hoveredNodeId !== data.id }"
-                >
-                  <button
-                    type="button"
-                    class="bm-action inline-flex items-center justify-center w-[26px] h-[26px] p-0 border-none cursor-pointer transition-all duration-200 neu-radius-sm text-[var(--el-text-color-secondary)]"
-                    @click.stop="openEdit(data)"
-                    title="编辑"
-                  >
-                    <el-icon><Edit /></el-icon>
-                  </button>
-                  <button
-                    type="button"
-                    class="bm-action bm-action-danger inline-flex items-center justify-center w-[26px] h-[26px] p-0 border-none cursor-pointer transition-all duration-200 neu-radius-sm text-[var(--el-text-color-secondary)]"
-                    @click.stop="confirmDelete(data)"
-                    title="删除"
-                  >
-                    <el-icon><Delete /></el-icon>
-                  </button>
-                </div>
-              </div>
-            </template>
-          </el-tree>
-        </div>
+    <!-- 书签列表 -->
+    <div class="list flex-1 min-h-0 flex flex-col border-t border-[var(--border)]">
+      <div class="flex items-center justify-between px-4 pt-3 pb-2">
+        <h2 class="section-title">书签列表</h2>
       </div>
-    </main>
+
+      <div v-if="loading" class="state">
+        <el-icon class="state-icon is-loading"><Loading /></el-icon>
+        <span>加载中</span>
+      </div>
+      <div v-else-if="error" class="state state-error">
+        <el-icon class="state-icon"><CircleClose /></el-icon>
+        <span>{{ error }}</span>
+      </div>
+      <div v-else-if="!treeData.length" class="state">
+        <el-icon class="state-icon"><Collection /></el-icon>
+        <span>暂无书签</span>
+      </div>
+
+      <div v-else class="tree-wrap flex-1 min-h-0 px-2 pb-2">
+        <el-tree
+          :data="treeData"
+          :props="{ label: 'label', children: 'children' }"
+          node-key="id"
+          default-expand-all
+          highlight-current
+          :indent="10"
+          class="bm-tree"
+        >
+          <template #default="{ data }">
+            <div class="bm-node">
+              <el-icon class="node-icon">
+                <Folder v-if="data.isFolder" />
+                <Link v-else />
+              </el-icon>
+              <span class="node-label" :title="data.label">{{ data.label }}</span>
+              <span class="node-actions">
+                <el-button
+                  :icon="Edit"
+                  text
+                  circle
+                  size="small"
+                  :aria-label="`编辑 ${data.label}`"
+                  @click.stop="openEdit(data)"
+                />
+                <el-button
+                  :icon="Delete"
+                  text
+                  circle
+                  size="small"
+                  class="danger"
+                  :aria-label="`删除 ${data.label}`"
+                  @click.stop="confirmDelete(data)"
+                />
+              </span>
+            </div>
+          </template>
+        </el-tree>
+      </div>
+    </div>
 
     <!-- 编辑弹窗 -->
     <el-dialog
       v-model="editVisible"
       :title="editingNode?.isFolder ? '重命名文件夹' : '重命名书签'"
-      width="90%"
+      width="92%"
       destroy-on-close
       @closed="editingNode = null"
     >
@@ -201,15 +151,17 @@ import {
   type BookmarkTreeNode,
 } from "@/utils/bookmarkAssistant"
 import {
-  ArrowDown,
+  CircleClose,
+  Collection,
   Delete,
   Download,
   Edit,
+  Folder,
+  Link,
   Loading,
   Picture,
   Refresh,
 } from "@element-plus/icons-vue"
-import { ElMessage, ElMessageBox } from "element-plus"
 import { onMounted, ref } from "vue"
 import { browser } from "wxt/browser"
 
@@ -221,16 +173,6 @@ const treeData = ref<BookmarkTreeItem[]>([])
 const editVisible = ref(false)
 const editingNode = ref<BookmarkTreeItem | null>(null)
 const editForm = ref({ title: "", url: "" })
-const hoveredNodeId = ref<string | null>(null)
-
-function formatUrl(url: string): string {
-  try {
-    const u = new URL(url)
-    return u.hostname || url.slice(0, 20)
-  } catch {
-    return url.slice(0, 20)
-  }
-}
 
 /** 判断 URL 是否可在普通标签页中打开（用于触发 favicon 获取） */
 function isVisitableUrl(url: string): boolean {
@@ -244,7 +186,9 @@ function isVisitableUrl(url: string): boolean {
 
 /** 获取 favicon 的 ImageData（用于判断是否为默认图标） */
 function getFaviconImageData(url: string): Promise<ImageData | null> {
-  const faviconUrl = new URL(browser.runtime.getURL("/_favicon/"))
+  // _favicon 是浏览器内置资源，不在 WXT 的公开资源路径类型内，故基于扩展 origin 拼接
+  const extensionOrigin = new URL(browser.runtime.getURL("/sidepanel.html")).origin
+  const faviconUrl = new URL("/_favicon/", extensionOrigin)
   faviconUrl.searchParams.set("pageUrl", url)
   faviconUrl.searchParams.set("size", "32")
   return new Promise((resolve) => {
@@ -290,7 +234,7 @@ async function waitForTabComplete(tabId: number, timeoutMs = 15000): Promise<voi
     return
   }
   return new Promise((resolve) => {
-    const listener = (id: number, changeInfo: { status?: string }, _tab: browser.Tabs.Tab) => {
+    const listener = (id: number, changeInfo: { status?: string }) => {
       if (id === tabId && changeInfo.status === "complete") {
         browser.tabs.onUpdated.removeListener(listener)
         resolve()
@@ -496,13 +440,22 @@ function handleExport(format: "html" | "json" | "excel") {
     downloadFile("bookmarks.json", "application/json;charset=utf-8", str)
     ElMessage.success("已导出 JSON")
   } else {
-    const buf = toExportExcel(tree)
+    void exportExcel(tree)
+  }
+}
+
+/** Excel 导出需动态加载 xlsx，单独处理异步失败 */
+async function exportExcel(tree: BookmarkTreeNode[]) {
+  try {
+    const buf = await toExportExcel(tree)
     downloadBlob(
       "bookmarks.xlsx",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       buf
     )
     ElMessage.success("已导出 Excel")
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : "导出 Excel 失败")
   }
 }
 
@@ -511,8 +464,8 @@ function downloadFile(filename: string, mime: string, content: string) {
   downloadBlob(filename, mime, blob)
 }
 
-function downloadBlob(filename: string, mime: string, content: Blob | Uint8Array) {
-  const blob = content instanceof Blob ? content : new Blob([content as BlobPart], { type: mime })
+function downloadBlob(filename: string, mime: string, content: Blob | ArrayBuffer) {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
@@ -525,188 +478,120 @@ onMounted(() => loadBookmarks())
 </script>
 
 <style lang="scss" scoped>
-/* 书签助手 - 拟态风格，按 DOM 父子层级组织 */
 .bm-panel {
-  color: var(--el-text-color-primary);
+  background: var(--surface);
 
-  .bm-header {
-    .bm-btn-icon {
-      font-size: 14px;
+  > .toolbar :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: var(--el-font-size-base);
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  .state {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 32px 0;
+    font-size: var(--el-font-size-extra-small);
+    color: var(--el-text-color-secondary);
+
+    .state-icon {
+      font-size: 20px;
+      color: var(--el-text-color-placeholder);
     }
-    .bm-btn-chevron {
-      font-size: 12px;
-      margin-left: 2px;
-      opacity: 0.9;
-    }
-    .bm-btn {
-      background: var(--neu-surface);
-      box-shadow: var(--neu-shadow-sm);
-      transition: all var(--neu-transition);
 
-      &:active:not(:disabled) {
-        transform: scale(0.98);
-        box-shadow: var(--neu-inset-sm);
-      }
+    &.state-error {
+      color: var(--el-color-danger);
 
-      &.bm-btn-ghost {
-        color: var(--el-text-color-secondary);
-
-        &:hover:not(:disabled) {
-          color: var(--el-text-color-primary);
-          box-shadow: var(--neu-shadow-md);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
-
-      &.bm-btn-primary {
-        background: var(--el-color-primary);
-        color: #fff;
-
-        &:hover:not(:disabled) {
-          filter: brightness(1.08);
-          box-shadow: var(--neu-shadow-md);
-        }
-      }
-
-      &.bm-btn-danger {
-        background: var(--el-color-danger);
-        color: #fff;
-
-        &:hover:not(:disabled) {
-          filter: brightness(1.08);
-          box-shadow: var(--neu-shadow-md);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
+      .state-icon {
+        color: var(--el-color-danger);
       }
     }
   }
 
-  .bm-main .bm-card {
-    .bm-card-header {
-      border-bottom: none;
-      background: transparent;
+  .bm-tree {
+    height: 100%;
+    overflow-y: auto;
+    background: transparent;
+
+    :deep(.el-tree-node__content) {
+      height: 34px;
+      padding-right: 8px;
+      border-radius: var(--radius-sm);
+      transition: background-color var(--motion-fast) var(--ease);
+
+      &:hover {
+        background: var(--surface-hover);
+      }
     }
 
-    .bm-state {
-      .bm-state-icon {
-        font-size: 28px;
-        font-weight: 700;
-        opacity: 0.5;
+    :deep(.el-tree-node.is-current > .el-tree-node__content) {
+      background: var(--accent-soft);
+    }
+
+    :deep(.el-tree-node__expand-icon) {
+      font-size: 12px;
+      color: var(--el-text-color-placeholder);
+    }
+  }
+
+  .bm-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+
+    .node-icon {
+      flex-shrink: 0;
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+    }
+
+    .node-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      font-size: var(--el-font-size-base);
+      color: var(--el-text-color-primary);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 行内操作：hover / 键盘聚焦时出现，触屏设备常显（不能只靠 hover） */
+    .node-actions {
+      display: flex;
+      flex-shrink: 0;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity var(--motion-fast) var(--ease);
+
+      :deep(.el-button + .el-button) {
+        margin-left: 0;
       }
 
-      &.bm-state-loading .bm-spinner {
-        width: 28px;
-        height: 28px;
-        border: 2px solid var(--neu-shadow-dark);
-        border-top-color: var(--el-color-primary);
-        border-radius: 50%;
-        animation: bm-spin 0.7s linear infinite;
-      }
-
-      &.bm-state-error .bm-state-icon {
+      .danger:hover {
         color: var(--el-color-danger);
+      }
+    }
+
+    &:hover .node-actions,
+    &:focus-within .node-actions {
+      opacity: 1;
+    }
+
+    @media (hover: none) {
+      .node-actions {
         opacity: 1;
       }
-    }
-
-    .bm-tree {
-      height: 100%;
-      overflow-y: auto;
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-      &::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: var(--neu-shadow-dark);
-        border-radius: 3px;
-      }
-      :deep(.el-tree) {
-        background: transparent;
-      }
-
-      :deep(.el-tree-node__content) {
-        height: auto;
-        min-height: 38px;
-        padding: 0 12px;
-        margin: 0 4px;
-        background: transparent !important;
-        border-radius: var(--neu-radius-sm);
-        transition: all var(--neu-transition);
-
-        &:hover {
-          background: var(--neu-surface) !important;
-          box-shadow: var(--neu-inset-sm);
-        }
-      }
-
-      :deep(.el-tree-node.is-current > .el-tree-node__content) {
-        background: var(--neu-surface) !important;
-        box-shadow: var(--neu-inset-sm);
-      }
-
-      :deep(.el-tree-node__expand-icon) {
-        color: var(--el-text-color-secondary);
-        font-size: 12px;
-      }
-
-      .bm-node {
-        .bm-action {
-          background: transparent;
-
-          &:hover {
-            background: var(--neu-surface);
-            color: var(--el-text-color-primary);
-            box-shadow: var(--neu-inset-sm);
-          }
-
-          &.bm-action-danger:hover {
-            background: rgba(245, 108, 108, 0.15);
-            color: var(--el-color-danger);
-          }
-        }
-      }
-    }
-  }
-}
-
-@keyframes bm-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
-
-<style lang="scss">
-/* 导出下拉菜单 - 拟态风格（popper 渲染在 body 下） */
-.bm-export-popper.el-dropdown__popper {
-  .el-dropdown-menu {
-    background: var(--neu-surface);
-    border: none;
-    box-shadow: var(--neu-shadow-lg);
-    border-radius: var(--neu-radius-sm);
-    padding: 6px 0;
-    overflow: hidden;
-  }
-  .el-dropdown-menu__item {
-    color: var(--el-text-color-primary);
-    font-size: 14px;
-    margin: 0 4px;
-    border-radius: var(--neu-radius-sm);
-
-    &:hover {
-      background: var(--neu-surface);
-      box-shadow: var(--neu-inset-sm);
-      color: var(--el-color-primary);
     }
   }
 }

@@ -1,104 +1,218 @@
-/* ===== 拟态风格设计系统（柔和精致版）===== */
+/* ==========================================================================
+   多工具助手 · 设计基座（浅色扁平）
+   1. Token：中性色阶 / 强调色 / 圆角 / 阴影 / 动效
+   2. Element Plus 变量映射（走官方 CSS 变量钩子，尽量不用 !important）
+   3. 基础重置与可访问性基线
+   ========================================================================== */
+
 :root {
-  /* 字体：不使用 13px */
+  color-scheme: light;
+
+  /* 中性色阶：界面 90% 的面积由这几级承担 */
+  --gray-25: #fcfcfd;
+  --gray-50: #f7f8fa;
+  --gray-100: #f1f2f5;
+  --gray-200: #e6e8ec;
+  --gray-300: #d5d8de;
+  --gray-400: #b3b9c4;
+  --gray-500: #8b93a1;
+  --gray-600: #646c7a;
+  --gray-700: #4a515e;
+  --gray-900: #1d2129;
+
+  /* 表面与边框 */
+  --surface: #ffffff;
+  --surface-muted: var(--gray-50);
+  --surface-hover: var(--gray-100);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+
+  /* 强调色：唯一强调色，白字对比 4.8:1 */
+  --accent: #1f6feb;
+  --accent-hover: #1a5fd0;
+  --accent-active: #1750b5;
+  --accent-soft: #eef4ff;
+  --accent-border: #c7dbfd;
+
+  /* 圆角阶梯：控件 6 / 面 10 / 浮层 14 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-pill: 999px;
+
+  /* 阴影：只给真正浮起的东西（弹窗、下拉、悬浮层） */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 12px 32px -8px rgba(16, 24, 40, 0.16), 0 4px 12px -4px rgba(16, 24, 40, 0.08);
+
+  /* 动效 */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* 字体 */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* --- Element Plus 变量映射 --- */
+:root {
+  /* 主色（含 hover / disabled 需要的光阶） */
+  --el-color-primary: var(--accent);
+  --el-color-primary-dark-2: var(--accent-hover);
+  --el-color-primary-light-3: #5b93f1;
+  --el-color-primary-light-5: #8fb5f5;
+  --el-color-primary-light-7: var(--accent-border);
+  --el-color-primary-light-8: #dbe8fe;
+  --el-color-primary-light-9: var(--accent-soft);
+
+  /* 危险色：白字对比 4.8:1，避免默认 #f56c6c 的可读性问题 */
+  --el-color-danger: #d92d20;
+  --el-color-danger-dark-2: #b42318;
+  --el-color-danger-light-3: #e35a4f;
+  --el-color-danger-light-5: #eda19a;
+  --el-color-danger-light-7: #f6cdc9;
+  --el-color-danger-light-8: #fae0dd;
+  --el-color-danger-light-9: #fdf0ee;
+
+  /* 文字 */
+  --el-text-color-primary: var(--gray-900);
+  --el-text-color-regular: var(--gray-700);
+  --el-text-color-secondary: var(--gray-600);
+  --el-text-color-placeholder: var(--gray-500);
+  --el-text-color-disabled: var(--gray-400);
+
+  /* 边框 / 填充 / 背景 */
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border);
+  --el-border-color-lighter: var(--gray-200);
+  --el-border-color-extra-light: var(--gray-100);
+  --el-border-color-dark: var(--border-strong);
+  --el-border-color-darker: var(--border-strong);
+  --el-fill-color: var(--gray-100);
+  --el-fill-color-light: var(--surface-muted);
+  --el-fill-color-lighter: var(--gray-25);
+  --el-fill-color-blank: var(--surface);
+  --el-bg-color: var(--surface);
+  --el-bg-color-page: var(--surface-muted);
+  --el-bg-color-overlay: var(--surface);
+
+  /* 圆角：控件小而面大，避免全站同一个圆角 */
+  --el-border-radius-base: var(--radius-sm);
+  --el-border-radius-small: var(--radius-xs);
+  --el-border-radius-round: var(--radius-pill);
+  --el-card-border-radius: var(--radius-lg);
+  --el-dialog-border-radius: var(--radius-xl);
+  --el-tag-border-radius: var(--radius-xs);
+
+  /* 阴影 */
+  --el-box-shadow: var(--shadow-md);
+  --el-box-shadow-light: var(--shadow-sm);
+  --el-box-shadow-lighter: var(--shadow-xs);
+  --el-box-shadow-dark: var(--shadow-lg);
+  --el-dialog-box-shadow: var(--shadow-lg);
+  --el-dropdown-menu-box-shadow: var(--shadow-md);
+  --el-overlay-color-lighter: rgba(29, 33, 41, 0.35);
+
+  /* 尺寸与字号（项目约定：不使用 13px） */
+  --el-component-size: 32px;
+  --el-component-size-small: 30px;
+  --el-component-size-large: 36px;
+  --el-font-size-base: 14px;
   --el-font-size-small: 14px;
   --el-font-size-extra-small: 12px;
+  --el-font-size-medium: 16px;
 
-  /* 拟态基础色 - 略带暖灰，避免冷硬感 */
-  --neu-bg: #e8ebf0;
-  --neu-bg-gradient: linear-gradient(145deg, #eef2f6 0%, #e4e8ee 100%);
-  --neu-surface: #f2f5f9;
-  /* 阴影：降低不透明度，更柔和自然 */
-  --neu-shadow-dark: rgba(163, 177, 198, 0.28);
-  --neu-shadow-light: rgba(255, 255, 255, 0.88);
-  --neu-shadow-sm: 3px 3px 6px var(--neu-shadow-dark), -3px -3px 6px var(--neu-shadow-light);
-  --neu-shadow-md: 5px 5px 10px var(--neu-shadow-dark), -5px -5px 10px var(--neu-shadow-light);
-  --neu-shadow-lg: 8px 8px 18px var(--neu-shadow-dark), -6px -6px 14px var(--neu-shadow-light);
-  --neu-inset:
-    inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
-  --neu-inset-sm:
-    inset 2px 2px 4px var(--neu-shadow-dark), inset -2px -2px 4px var(--neu-shadow-light);
-  --neu-radius: 12px;
-  --neu-radius-sm: 8px;
-  --neu-radius-lg: 16px;
-  --neu-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 动效时长与组件库保持一致 */
+  --el-transition-duration: var(--motion-base);
+  --el-transition-duration-fast: var(--motion-fast);
+
+  /* 弹窗在窄面板里收紧内边距 */
+  --el-dialog-padding-primary: 16px;
+  --el-dialog-margin-top: 8vh;
 }
 
-/* 基础重置 */
-body,
+/* --- 基础重置 --- */
 html,
+body,
 #app {
+  height: 100%;
   margin: 0;
   padding: 0;
-  height: 100%;
-  background: var(--neu-bg-gradient);
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
 }
 
-* {
+body {
+  background: var(--surface-muted);
+  color: var(--el-text-color-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--el-font-size-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-/* 拟态通用类 neu-* 由 UnoCSS shortcuts 提供 */
-
-/* Element Plus 拟态适配 */
-.el-button--primary {
-  box-shadow: var(--neu-shadow-sm) !important;
-  transition:
-    box-shadow var(--neu-transition),
-    transform var(--neu-transition) !important;
-}
-.el-button--primary:hover {
-  box-shadow: var(--neu-shadow-md) !important;
+/* 细滚动条：面板很窄，默认滚动条太抢眼 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.el-card {
-  background: var(--neu-surface) !important;
-  border: none !important;
-  box-shadow: var(--neu-shadow-md) !important;
-  border-radius: var(--neu-radius) !important;
-  transition: box-shadow var(--neu-transition) !important;
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
 }
 
-.el-input__wrapper {
-  background: var(--neu-surface) !important;
-  box-shadow: var(--neu-inset-sm) !important;
-  border: none !important;
-  transition: box-shadow var(--neu-transition) !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+  background-clip: content-box;
 }
 
-.el-input__wrapper:hover {
-  box-shadow:
-    inset 2px 2px 4px var(--neu-shadow-dark),
-    inset -2px -2px 4px var(--neu-shadow-light),
-    0 0 0 1px rgba(163, 177, 198, 0.25) !important;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.el-input__wrapper.is-focus {
-  box-shadow:
-    var(--neu-inset-sm),
-    0 0 0 2px var(--el-color-primary) !important;
+/* --- Element Plus 结构微调 ---
+   EP 给相邻按钮加 margin-left，与 flex gap 叠加会变成双倍间距；
+   用 body 前缀提高优先级，避免依赖样式表的加载顺序。 */
+body .el-button + .el-button {
+  margin-left: 0;
 }
 
-/* 弹窗拟态适配 */
-.el-dialog {
-  background: var(--neu-surface) !important;
-  box-shadow: var(--neu-shadow-lg) !important;
-  border-radius: var(--neu-radius-lg) !important;
-  border: none !important;
+.el-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.el-dialog__header {
-  border-bottom: none;
+/* 键盘焦点基线：只在键盘导航时出现，鼠标点击不显示 */
+:where(button, a, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.el-radio-group .el-radio-button__inner,
-.el-tag {
-  border-radius: var(--neu-radius-sm) !important;
+/* 数值统一等宽对齐，避免时间/计数跳动 */
+:where(.tabular, [data-num]) {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
